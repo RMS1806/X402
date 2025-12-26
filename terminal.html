@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>X402: AGENT COMMAND LINK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #050505; font-family: 'JetBrains Mono', monospace; color: #00ff41; }
+        .glow { text-shadow: 0 0 10px rgba(0, 255, 65, 0.5); }
+        .border-glow { box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+        
+        /* Custom Scrollbar for all panels */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb:hover { background: #00ff41; }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300ff41%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem top 50%;
+            background-size: 0.65rem auto;
+            padding-right: 2rem;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col p-4 bg-black">
+
+    <div class="flex justify-between items-center border-b border-green-900 pb-3 mb-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#00ff41]"></div>
+            <h1 class="text-xl font-bold glow tracking-wider">X402 AUTONOMOUS NODE</h1>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col items-end mr-2">
+                <div class="flex justify-between w-32">
+                    <span class="text-[10px] text-green-700 font-bold">RISK TOLERANCE</span>
+                    <span id="riskLabel" class="text-[10px] text-green-400 font-bold">BALANCED (0.6)</span>
+                </div>
+                <input type="range" id="riskSlider" min="0.1" max="0.9" step="0.1" value="0.6" onchange="updateRisk()" 
+                       class="w-32 h-1 bg-green-900 rounded-lg appearance-none cursor-pointer accent-green-500 hover:accent-white transition-all">
+            </div>
+
+            <button onclick="manualScan()" class="bg-green-900/30 border border-green-500 text-green-400 text-xs px-4 py-2 font-bold hover:bg-green-500 hover:text-black transition-all duration-300 border-glow flex items-center gap-2 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                INITIATE SCAN
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="text-xs text-green-700 font-bold">TARGET:</div>
+                <select id="assetSelect" onchange="changeAsset()" class="bg-black border border-green-800 text-green-400 text-xs py-1 px-2 font-bold hover:border-green-500 cursor-pointer focus:outline-none transition-colors">
+                    <option value="BTC-USD">BITCOIN (BTC)</option>
+                    <option value="ETH-USD">ETHEREUM (ETH)</option>
+                    <option value="SOL-USD">SOLANA (SOL)</option>
+                    <option value="DOGE-USD">DOGECOIN (DOGE)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-4 h-full pb-2 overflow-hidden">
+        
+        <div class="col-span-3 flex flex-col gap-3 overflow-y-auto pr-1">
+            
+            <div class="bg-black border border-green-500/30 p-3 relative overflow-hidden shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="text-[10px] text-green-500 font-bold tracking-widest">PORTFOLIO MATRIX</div>
+                    <div class="text-[10px] text-gray-500 font-mono">SIMULATED</div>
+                </div>
+                <div class="flex justify-between items-end mb-1">
+                    <div class="text-xs text-gray-400">EQUITY</div>
+                    <div id="equityDisplay" class="text-xl font-bold text-white">$10,000.00</div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div class="text-xs text-gray-400">PnL</div>
+                    <div id="pnlDisplay" class="text-xl font-bold text-gray-500">0.00%</div>
+                </div>
+                <div id="tradeStatus" class="mt-2 text-[10px] text-green-400/80 text-center border-t border-green-900/50 pt-1">
+                    READY TO TRADE
+                </div>
+            </div>
+
+            <div class="bg-blue-900/10 border border-blue-500/30 p-3 backdrop-blur-sm relative overflow-hidden shrink-0">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-[10px] text-blue-400 font-bold tracking-widest">LATEST INTEL</div>
+                    <div class="w-1.5 h-1.5 bg-blue-500 animate-ping rounded-full"></div>
+                </div>
+                <div id="newsDisplay" class="text-xs text-white font-mono leading-snug opacity-90 h-12 overflow-hidden text-ellipsis">
+                    Scanning Global Feeds...
+                </div>
+            </div>
+
+            <div class="bg-gray-900/40 border border-green-900/50 p-3 backdrop-blur-sm shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="text-xs text-gray-500 font-bold">RSI (14)</div>
+                    <div class="text-[10px] text-green-800">OS:30 / OB:70</div>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div id="rsiDisplay" class="text-2xl font-bold text-white">--</div>
+                    <div id="rsiStatus" class="text-xs mb-1 text-gray-600">NEUTRAL</div>
+                </div>
+                <div class="w-full bg-gray-800 h-1.5 mt-2 relative overflow-hidden rounded-full">
+                    <div id="rsiBar" class="h-full bg-green-500 w-0 transition-all duration-700 ease-out"></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-900/40 border border-green-900/50 p-3 backdrop-blur-sm shrink-0">
+                <div class="text-xs text-gray-500 font-bold mb-1">MOMENTUM</div>
+                <div id="momDisplay" class="text-xl font-bold text-white">--</div>
+                <div class="text-[10px] text-gray-600 mt-1">Trend Velocity</div>
+            </div>
+
+            <div class="bg-gray-900/40 border border-green-900/50 p-3 backdrop-blur-sm shrink-0">
+                <div class="text-xs text-gray-500 font-bold mb-1">VOLATILITY</div>
+                <div id="volDisplay" class="text-xl font-bold text-white">--</div>
+                <div class="text-[10px] text-gray-600 mt-1">Risk Factor</div>
+            </div>
+
+            <div class="bg-gray-900/40 border border-green-900/50 p-4 mt-auto backdrop-blur-sm relative overflow-hidden shrink-0">
+                <div class="absolute -right-6 -top-6 w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
+                <div class="text-xs text-blue-400 font-bold mb-1">HYBRID CONFIDENCE</div>
+                <div id="confDisplay" class="text-4xl font-bold text-white">--%</div>
+                <div class="text-[10px] text-blue-600/70 mt-2">ML + News + Logic</div>
+            </div>
+        </div>
+
+        <div class="col-span-6 border border-green-900/80 bg-black/80 flex flex-col relative border-glow overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 bg-green-900/20 border-b border-green-900/50 px-3 py-1 flex justify-between items-center z-10">
+                <span class="text-[10px] font-bold tracking-widest text-green-400">AGENT REASONING STREAM</span>
+                <span class="text-[10px] text-green-800 animate-pulse">● LIVE</span>
+            </div>
+            <div id="chatFeed" class="p-4 mt-8 overflow-y-auto space-y-3 h-full flex flex-col scroll-smooth">
+                <div class="text-gray-700 text-sm text-center italic mt-10">Awaiting trigger...</div>
+            </div>
+        </div>
+
+        <div class="col-span-3 border border-green-900/50 bg-black p-2 overflow-y-auto font-mono text-[10px] text-green-600/70" id="systemLogs"></div>
+    </div>
+
+<script>
+        const API_URL = "http://127.0.0.1:8000";
+        let lastLogTimestamp = ""; // Track by timestamp, not hash (faster/stable)
+        let isPaused = false; 
+
+        // --- RISK SLIDER ---
+        async function updateRisk() {
+            const slider = document.getElementById("riskSlider");
+            const label = document.getElementById("riskLabel");
+            const val = parseFloat(slider.value);
+            
+            let mode = "BALANCED"; let color = "text-green-400";
+            if(val >= 0.8) { mode = "DEGEN"; color = "text-red-500 animate-pulse"; }
+            else if(val <= 0.3) { mode = "SAFE"; color = "text-blue-400"; }
+            
+            label.innerText = `${mode} (${val})`;
+            label.className = `text-[10px] font-bold ${color}`;
+            try { await fetch(`${API_URL}/set_risk`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ level: val }) }); } catch(e) {}
+        }
+
+        // --- MANUAL TRIGGER ---
+        async function manualScan() {
+            if(isPaused) return;
+            isPaused = true; 
+            
+            // Visual Feedback
+            const feed = document.getElementById("chatFeed");
+            feed.innerHTML = `<div class="border-l-2 border-blue-500 pl-4 py-3 bg-blue-900/10 animate-pulse"><div class="text-xs text-blue-400 font-bold mb-1">COMMAND AUTHORIZED</div><div class="text-lg text-white">Initializing Autonomous Payment Protocol...</div></div>` + feed.innerHTML;
+            
+            try { 
+                await fetch(`${API_URL}/trigger_agent`, { method: "POST" }); 
+                // Wait 1.5s before resuming updates to let the backend catch up
+                setTimeout(() => { isPaused = false; }, 1500); 
+            } catch (e) { isPaused = false; }
+        }
+
+        // --- ASSET SWITCHER ---
+        async function changeAsset() {
+            const ticker = document.getElementById("assetSelect").value;
+            isPaused = true;
+            try {
+                await fetch(`${API_URL}/set_asset`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ ticker: ticker }) });
+                await fetch(`${API_URL}/clear_logs`);
+                // Clear UI immediately
+                document.getElementById("systemLogs").innerHTML = "";
+                lastLogTimestamp = ""; 
+                
+                setTimeout(() => { isPaused = false; }, 2000);
+            } catch (e) { isPaused = false; }
+        }
+
+        // --- MAIN LOOP (SMOOTH UPDATE) ---
+        async function fetchState() {
+            if (isPaused) return; 
+            try {
+                const res = await fetch(`${API_URL}/logs`);
+                const logs = await res.json();
+                if (logs.length === 0) return;
+
+                // 1. SMART LOG UPDATE (Prevents Flicker)
+                // We only render if the top log is newer than what we have
+                const newestLog = logs[0];
+                if (newestLog.timestamp !== lastLogTimestamp) {
+                    lastLogTimestamp = newestLog.timestamp;
+                    
+                    // Re-render logs efficiently
+                    const logContainer = document.getElementById("systemLogs");
+                    const newHTML = logs.map(l => `<div class="mb-1 border-b border-green-900/30 pb-1"><span class="text-green-800">[${l.timestamp}]</span> <span class="${l.action === 'ERROR' ? 'text-red-500' : ''}">${l.action}</span></div>`).join('');
+                    
+                    // Only update innerHTML if it actually changed (Text Diffing)
+                    if(logContainer.innerHTML !== newHTML) {
+                        logContainer.innerHTML = newHTML;
+                    }
+                }
+
+                // 2. DECISION PARSING (Persist State)
+                // Find the latest "DELIVERED" message
+                const latest = logs.find(l => l.action === "DELIVERED");
+                
+                // Only update boxes if we actually found a result
+                if (latest) {
+                    const parts = latest.message.split("|");
+                    if(parts.length >= 2) {
+                        // Extract RAW values
+                        const rawRsi = parts.find(p => p.includes("RSI:"))?.split(":")[1];
+                        const rawMom = parts.find(p => p.includes("MOM:"))?.split(":")[1];
+                        const rawVol = parts.find(p => p.includes("VOL:"))?.split(":")[1];
+                        const rawPnl = parts.find(p => p.includes("PnL:"))?.split(":")[1];
+                        const rawEq = parts.find(p => p.includes("Eq:"))?.split(":")[1];
+                        
+                        // Only update DOM if the value exists (Prevents flashing "--")
+                        if(rawRsi) {
+                            document.getElementById("rsiDisplay").innerText = rawRsi;
+                            const rsiVal = parseFloat(rawRsi);
+                            const rsiBar = document.getElementById("rsiBar");
+                            const rsiStat = document.getElementById("rsiStatus");
+                            rsiBar.style.width = Math.min(rsiVal, 100) + "%";
+                            
+                            if(rsiVal > 70) { 
+                                rsiBar.className = "h-full bg-red-500 w-0 shadow-[0_0_8px_rgba(255,0,0,0.6)]"; 
+                                rsiStat.innerText = "OVERBOUGHT"; rsiStat.className = "text-xs mb-1 text-red-500 font-bold blink"; 
+                            } else if(rsiVal < 30) { 
+                                rsiBar.className = "h-full bg-green-400 w-0 shadow-[0_0_8px_rgba(0,255,0,0.6)]"; 
+                                rsiStat.innerText = "OVERSOLD"; rsiStat.className = "text-xs mb-1 text-green-400 font-bold blink"; 
+                            } else { 
+                                rsiBar.className = "h-full bg-blue-500 w-0"; 
+                                rsiStat.innerText = "NEUTRAL"; rsiStat.className = "text-xs mb-1 text-blue-500"; 
+                            }
+                        }
+
+                        if(rawMom) document.getElementById("momDisplay").innerText = rawMom;
+                        if(rawVol) document.getElementById("volDisplay").innerText = rawVol;
+                        
+                        if(rawPnl) {
+                             const pnlNum = parseFloat(rawPnl);
+                             document.getElementById("pnlDisplay").innerText = pnlNum.toFixed(2) + "%";
+                             if(pnlNum > 0) document.getElementById("pnlDisplay").className = "text-xl font-bold text-green-500";
+                             else if(pnlNum < 0) document.getElementById("pnlDisplay").className = "text-xl font-bold text-red-500";
+                        }
+                        
+                        if(rawEq) document.getElementById("equityDisplay").innerText = "$" + parseFloat(rawEq).toLocaleString();
+
+                        // News & Confidence are usually safe to overwrite
+                        const newsPart = parts.find(p => p.includes("NEWS:"));
+                        if(newsPart) document.getElementById("newsDisplay").innerText = newsPart.split("NEWS:")[1];
+
+                        const mainSig = parts[0].trim(); 
+                        document.getElementById("confDisplay").innerText = mainSig.split("(")[1].replace(")", "");
+
+                        // CHAT FEED UPDATE
+                        const feed = document.getElementById("chatFeed");
+                        const lastTimestamp = feed.querySelector('.text-xs.text-gray-600')?.innerText;
+                        
+                        // Add bubble only if it's a NEW timestamp
+                        if (lastTimestamp !== latest.timestamp) {
+                             if(feed.innerText.includes("Awaiting")) feed.innerHTML = "";
+                            
+                            const asset = parts.find(p => p.includes("Asset:"))?.split(":")[1] || "BTC";
+                            const reason = parts[1].trim().replace(/"/g, '');
+                            const isBuy = mainSig.includes('BUY'); const isSell = mainSig.includes('SELL'); const color = isBuy ? 'green' : isSell ? 'red' : 'gray';
+                            
+                            feed.prepend(document.createRange().createContextualFragment(`
+                                <div class="border-l-4 border-${color}-500 pl-4 py-3 bg-gray-900/30 mb-2 rounded-r animate-fade-in">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-[10px] text-gray-500 font-mono tracking-widest">DECISION CORE [${asset}]</span>
+                                        <span class="text-xs text-gray-600">${latest.timestamp}</span>
+                                    </div>
+                                    <div class="text-2xl font-bold text-${color}-400 mb-2">${mainSig}</div>
+                                    <div class="text-sm text-gray-300 font-light leading-relaxed">"${reason}"</div>
+                                </div>`
+                            ));
+                        }
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+        
+        setInterval(fetchState, 1000);
+    </script>
+</body>
+</html>

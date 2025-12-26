@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>x402: Agent Live Feed</title>
+    <style>
+        body { background: #050505; color: #00ff41; font-family: 'Courier New', monospace; padding: 20px; }
+        h1 { text-align: center; border-bottom: 2px solid #00ff41; padding-bottom: 10px; }
+        
+        .container { max-width: 800px; margin: 0 auto; display: flex; gap: 20px; }
+        
+        /* Stats Panel */
+        .stats { width: 30%; border: 1px solid #333; padding: 15px; background: #0a0a0a; height: fit-content; }
+        .stat-box { margin-bottom: 20px; }
+        .label { color: #888; font-size: 0.8rem; }
+        .value { font-size: 1.5rem; font-weight: bold; }
+        .status-dot { height: 10px; width: 10px; background-color: #333; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .active { background-color: #00ff41; box-shadow: 0 0 10px #00ff41; }
+
+        /* Logs Panel */
+        .logs { width: 70%; }
+        .log-entry { 
+            border-left: 2px solid #333; 
+            padding: 10px 15px; 
+            margin-bottom: 10px; 
+            background: #0e0e0e; 
+            transition: all 0.3s;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        .log-meta { font-size: 0.75rem; color: #666; display: flex; justify-content: space-between; }
+        .log-message { font-size: 1.1rem; margin-top: 5px; }
+        
+        /* Action Colors */
+        .action-BUY { border-left-color: #00ff41; background: #001a05; }
+        .action-WAIT { border-left-color: #ffaa00; }
+        .action-ERROR { border-left-color: #ff0000; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>🧠 AUTONOMOUS AGENT VIEW</h1>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-box">
+                <div class="label">AGENT STATUS</div>
+                <div class="value"><span id="agentStatus" class="status-dot"></span><span id="statusText">OFFLINE</span></div>
+            </div>
+            <div class="stat-box">
+                <div class="label">LAST SIGNAL</div>
+                <div class="value" id="lastSignal">--</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">CONFIDENCE</div>
+                <div class="value" id="lastConf">0%</div>
+            </div>
+            <button onclick="clearLogs()" style="background:transparent; border:1px solid #333; color:#666; cursor:pointer;">RESET LOGS</button>
+        </div>
+
+        <div class="logs" id="logFeed">
+            <div style="color:#444; text-align:center;">Waiting for agent connection...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let lastLogHash = "";
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch(`${API_URL}/logs`);
+                const logs = await res.json();
+                
+                if(logs.length > 0) {
+                    // Update Status
+                    document.getElementById("agentStatus").classList.add("active");
+                    document.getElementById("statusText").innerText = "ONLINE";
+                    
+                    // Render Logs
+                    const feed = document.getElementById("logFeed");
+                    const currentHash = JSON.stringify(logs[0]); 
+                    if (currentHash !== lastLogHash) {
+                        lastLogHash = currentHash;
+                        feed.innerHTML = logs.map(log => `
+                            <div class="log-entry action-${log.action}">
+                                <div class="log-meta">
+                                    <span>${log.timestamp}</span>
+                                    <span>${log.action}</span>
+                                </div>
+                                <div class="log-message">${log.message}</div>
+                            </div>
+                        `).join('');
+
+                        // Update Stats if it's a result
+                        if (logs[0].action === "DELIVERED") {
+                            // Parse the message string to get details
+                            const signal = logs[0].message.split(": ")[1]; 
+                            document.getElementById("lastSignal").innerText = signal;
+                            document.getElementById("lastConf").innerText = "100%"; // Placeholder for demo
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById("agentStatus").classList.remove("active");
+                document.getElementById("statusText").innerText = "OFFLINE";
+            }
+        }
+
+        async function clearLogs() {
+            await fetch(`${API_URL}/clear_logs`);
+            document.getElementById("logFeed").innerHTML = "";
+            lastLogHash = "";
+        }
+
+        setInterval(fetchLogs, 1000);
+    </script>
+</body>
+</html>
