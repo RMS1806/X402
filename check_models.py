@@ -1,7 +1,7 @@
 import google.generativeai as genai
 
 # ⚠️ PASTE YOUR KEY HERE
-genai.configure(api_key="AIzaSyDDWVkXOngZFXtumObWPAJ3Zj7O_dapIqM")
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
 
 print("🔍 Scanning available models...")
 try:
